@@ -1,8 +1,10 @@
-export default function Card({ title, children }) {
-  return (
-    <div className="bg-white shadow rounded-xl p-4">
-      {title && <h3 className="font-semibold mb-2">{title}</h3>}
-      {children}
-    </div>
-  );
-}
+import React from 'react';
+
+
+const Card = ({ children, className = '' }) => (
+  <div className={`bg-white shadow-md rounded-lg p-6 ${className}`}>
+    {children}
+  </div>
+);
+
+export default Card; 

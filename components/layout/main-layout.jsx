@@ -1,16 +1,24 @@
-import Navbar from "./navbar";
-import Sidebar from "./sidebar";
-import Footer from "./footer";
+"use client"
 
-export default function MainLayout({ children }) {
-  return (
-    <div className="flex flex-col h-screen">
-      <Navbar />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main className="flex-1 p-6 bg-gray-50">{children}</main>
-      </div>
-      <Footer />
+
+
+const MainLayout = ({ children, sidebar, navbar, footer }) => (
+  <div className="flex flex-col min-h-screen bg-gray-50">
+    <header>
+      {navbar}
+    </header>
+    <div className="flex flex-1 w-full">
+      <aside>
+        {sidebar }
+      </aside>
+      <main className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full">
+        {children}
+      </main>
     </div>
-  );
-}
+    <footer>
+      {footer }
+    </footer>
+  </div>
+);
+
+export default MainLayout; 
