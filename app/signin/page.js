@@ -1,5 +1,5 @@
-import LoginPage from "@/components/page/login-page";
+import LoginPage from '@/components/page/login-page';
 
 export default function SignInPage() {
-  return <LoginPage />;
+    return <LoginPage />;
 }
