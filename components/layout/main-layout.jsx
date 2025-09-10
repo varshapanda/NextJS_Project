@@ -1,7 +1,4 @@
 "use client"
-
-
-
 const MainLayout = ({ children, sidebar, navbar, footer }) => (
   <div className="flex flex-col min-h-screen bg-gray-50">
     <header>
