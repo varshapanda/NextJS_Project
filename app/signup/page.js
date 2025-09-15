@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation'; 
+import { signIn } from 'next-auth/react';
 import Navbar from '@/components/layout/navbar';
 import InputField from '@/components/global/input-field';
 import Button from '@/components/global/button';  
@@ -53,12 +54,31 @@ const SignupPage = () => {
 
       console.log('Registration successful:', data);
 
-      setSuccess('Registration successful! Redirecting to login...');
-      
-      // Redirect to login page after 2 seconds
-      setTimeout(() => {
-        router.push('/signin'); 
-      }, 2000);
+      // Show the redirect message from backend
+      setSuccess(data.message || 'Registration successful! Logging you in...');
+
+      // Optional: Wait for DB consistency
+      await new Promise((res) => setTimeout(res, 500));
+
+      // Automatically sign in the user after registration
+      const signInResponse = await signIn('credentials', {
+        redirect: false,
+        email: form.email,
+        password: form.password,
+      });
+
+      if (signInResponse?.ok) {
+        // Add a slight delay to show the success message
+        setTimeout(() => {
+          if (form.role === 'admin') {
+            router.push('/admin_dashboard');
+          } else {
+            router.push('/student_dashboard');
+          }
+        }, 1500);
+      } else {
+        setError('Registration succeeded, but automatic login failed. Please sign in manually.');
+      }
 
     } catch (err) {
       setError('An unexpected error occurred.');
@@ -150,7 +170,7 @@ const SignupPage = () => {
             Already have an account?{' '}
             <button
               type="button"
-              onClick={() => router.push('/login')} // Changed from '/signin' to '/login'
+              onClick={() => router.push('/signin')}
               className="text-blue-600 hover:text-blue-800 underline"
             >
               Sign In

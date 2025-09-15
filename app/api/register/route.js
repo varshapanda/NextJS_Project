@@ -76,6 +76,10 @@ export async function POST(request) {
       role,
     });
 
+    // Determine redirect message
+    const dashboard = role === 'admin' ? 'admin_dashboard' : 'student_dashboard';
+    const redirectMessage = `User registered successfully. Redirecting to /${dashboard}`;
+
     console.log(' User registration successful:', {
       id: newUser._id.toString(),
       email: newUser.email,
@@ -86,7 +90,7 @@ export async function POST(request) {
 
     return NextResponse.json(
       { 
-        message: 'User registered successfully',
+        message: redirectMessage,
         user: {
           id: newUser._id.toString(),
           email: newUser.email,
