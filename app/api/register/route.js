@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-
-let users = [];
+import connectToDatabase from '@/utils/mongodb';
+import User from '@/app/models/User';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
   try {
@@ -9,6 +10,7 @@ export async function POST(request) {
 
     // Validation
     if (!email || !password || !name || !role) {
+      console.log(' Registration failed: Missing required fields');
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -16,66 +18,77 @@ export async function POST(request) {
     }
 
     if (!['student', 'admin'].includes(role)) {
+      console.log(' Registration failed: Invalid role -', role);
       return NextResponse.json(
         { error: 'Invalid role selected' },
         { status: 400 }
       );
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+      console.log(' Registration failed: Invalid email format -', email);
       return NextResponse.json(
         { error: 'Invalid email format' },
         { status: 400 }
       );
     }
 
-    // Password strength validation
     if (password.length < 6) {
+      console.log(' Registration failed: Password too short');
       return NextResponse.json(
         { error: 'Password must be at least 6 characters long' },
         { status: 400 }
       );
     }
 
+    // Log registration attempt
+    console.log(' New user registration attempt:', {
+      email,
+      name,
+      role,
+      timestamp: new Date().toISOString()
+    });
+
+    // Connect to MongoDB
+    console.log(' Connecting to MongoDB...');
+    await connectToDatabase();
+    console.log(' Connected to MongoDB');
+
     // Check if user already exists
-    const existingUser = users.find(user => user.email === email);
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log(' Registration failed: Email already exists -', email);
       return NextResponse.json(
-        { error: 'User already exists with this email' },
+        { error: 'User already exists' },
         { status: 400 }
       );
     }
 
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+    
     // Create new user
-    const newUser = {
-      id: Date.now().toString(),
+    const newUser = await User.create({
       email,
-      password, // In production, hash this password
+      password: hashedPassword,
       name,
       role,
-      createdAt: new Date().toISOString(),
-      isActive: true
-    };
+    });
 
-    // Add to mock storage
-    users.push(newUser);
-
-    // Terminal log for registration
-    console.log('New user registered:', {
-      id: newUser.id,
+    console.log(' User registration successful:', {
+      id: newUser._id.toString(),
       email: newUser.email,
       name: newUser.name,
       role: newUser.role,
-      timestamp: newUser.createdAt
+      timestamp: new Date().toISOString()
     });
 
     return NextResponse.json(
       { 
         message: 'User registered successfully',
         user: {
-          id: newUser.id,
+          id: newUser._id.toString(),
           email: newUser.email,
           name: newUser.name,
           role: newUser.role
@@ -85,15 +98,10 @@ export async function POST(request) {
     );
 
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error(' Registration error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
-}
-
-// Optional: GET endpoint to see all users (for testing)
-export async function GET() {
-  return NextResponse.json({ users }, { status: 200 });
 }

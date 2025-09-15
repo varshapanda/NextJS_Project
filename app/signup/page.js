@@ -51,11 +51,13 @@ const SignupPage = () => {
         return;
       }
 
+      console.log('Registration successful:', data);
+
       setSuccess('Registration successful! Redirecting to login...');
       
       // Redirect to login page after 2 seconds
       setTimeout(() => {
-        router.push('/signin');
+        router.push('/signin'); 
       }, 2000);
 
     } catch (err) {
@@ -148,7 +150,7 @@ const SignupPage = () => {
             Already have an account?{' '}
             <button
               type="button"
-              onClick={() => router.push('/signin')}
+              onClick={() => router.push('/login')} // Changed from '/signin' to '/login'
               className="text-blue-600 hover:text-blue-800 underline"
             >
               Sign In
