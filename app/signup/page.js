@@ -1,10 +1,11 @@
-"use client"
+"use client";
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import Navbar from '@/components/layout/navbar';
-import InputField from '@/components/global/input-field';
-import Button from '@/components/global/button';  
+import toast from 'react-hot-toast';
+import Navbar from '../../components/layout/navbar';
+import InputField from '../../components/global/input-field';
+import Button from '../../components/global/button';
 
 const SignupPage = () => {
   const [form, setForm] = useState({ 
@@ -13,28 +14,26 @@ const SignupPage = () => {
     name: '', 
     role: 'student' 
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setError('');
-    setSuccess('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
     
     if (!form.email || !form.password || !form.name || !form.role) {
-      setError('All fields are required.');
+      toast.error('All fields are required.');
       return;
     }
     
     setIsLoading(true);
+  
+    const loadingToast = toast.loading('Creating your account...', {
+      duration: Infinity,
+    });
     
     try {
       const response = await fetch('/api/register', {
@@ -48,19 +47,16 @@ const SignupPage = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Registration failed');
+        toast.dismiss(loadingToast);
+        toast.error(data.error || 'Registration failed. Please try again.');
         return;
       }
 
-      console.log('Registration successful:', data);
+      toast.dismiss(loadingToast);
+      const loginToast = toast.loading('Registration successful! Logging you in...', {
+        duration: Infinity,
+      });
 
-      // Show the redirect message from backend
-      setSuccess(data.message || 'Registration successful! Logging you in...');
-
-      // Optional: Wait for DB consistency
-      await new Promise((res) => setTimeout(res, 500));
-
-      // Automatically sign in the user after registration
       const signInResponse = await signIn('credentials', {
         redirect: false,
         email: form.email,
@@ -68,20 +64,21 @@ const SignupPage = () => {
       });
 
       if (signInResponse?.ok) {
-        // Add a slight delay to show the success message
-        setTimeout(() => {
-          if (form.role === 'admin') {
-            router.push('/admin_dashboard');
-          } else {
-            router.push('/student_dashboard');
-          }
-        }, 1500);
+        toast.dismiss(loginToast);
+        toast.success(`Welcome ${form.name}! Redirecting to your dashboard...`);
+        if (form.role === 'admin') {
+          router.push('/admin_dashboard');
+        } else {
+          router.push('/student_dashboard');
+        }
       } else {
-        setError('Registration succeeded, but automatic login failed. Please sign in manually.');
+        toast.dismiss(loginToast);
+        toast.error('Registration succeeded, but automatic login failed. Please sign in manually.');
       }
 
     } catch (err) {
-      setError('An unexpected error occurred.');
+      toast.dismiss(loadingToast);
+      toast.error('An unexpected error occurred. Please try again.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -91,21 +88,9 @@ const SignupPage = () => {
   return (
     <>
       <Navbar />
-      <div className="max-w-md mx-auto mt-16 p-4 bg-white rounded-lg shadow-md">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="max-w-md mx-auto mt-16 bg-white">
+        <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md">
           <h2 className="text-2xl text-black font-bold mb-6 text-center">Sign Up</h2>
-          
-          {error && (
-            <div className="p-3 mb-4 text-red-600 bg-red-100 rounded text-center text-sm" role="alert">
-              {error}
-            </div>
-          )}
-          
-          {success && (
-            <div className="p-3 mb-4 text-green-600 bg-green-100 rounded text-center text-sm" role="alert">
-              {success}
-            </div>
-          )}
           
           <InputField
             label="Full Name"
@@ -158,11 +143,7 @@ const SignupPage = () => {
             </select>
           </div>
           
-          <Button 
-            type="submit" 
-            disabled={isLoading}
-            className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={isLoading}>
             {isLoading ? 'Creating Account...' : 'Sign Up'}
           </Button>
           

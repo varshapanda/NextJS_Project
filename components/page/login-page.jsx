@@ -1,39 +1,73 @@
-"use client"
+"use client";
 import React, { useState } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import Navbar from '../layout/navbar';
 import InputField from '../global/input-field';
 import Button from '../global/button';
 
 const LoginPage = () => {
   const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     
     if (!form.email || !form.password) {
-      setError('Email and password are required.');
+      toast.error('Email and password are required.');
       return;
     }
     
     setIsLoading(true);
     
-    // Simulate API call (remove in real implementation)
-    setTimeout(() => {
+    const loadingToast = toast.loading('Signing you in...', {
+      duration: Infinity,
+    });
+    
+    try {
+      const res = await signIn("credentials", { 
+        redirect: false, 
+        email: form.email,
+        password: form.password
+      });
+      
+      if (res?.error) {
+        toast.dismiss(loadingToast);
+        toast.error("Invalid credentials. Please check your email and password.");
+        setIsLoading(false);
+        return;
+      }
+      
+      if (res?.ok) {
+        toast.dismiss(loadingToast);
+        toast.success('Login successful! Redirecting...');
+        setTimeout(async () => {
+          const sessionRes = await fetch('/api/auth/session');
+          const session = await sessionRes.json();
+          const role = session?.user?.role;
+          
+          if (role === 'admin') {
+            router.push('/admin_dashboard');
+          } else if (role === 'student') {
+            router.push('/student_dashboard');
+          } else {
+            console.log(session);
+          }
+        }, 100);
+      }
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      toast.error("An unexpected error occurred. Please try again.");
+      console.error(err);
+    } finally {
       setIsLoading(false);
-      // For now, just redirect to student dashboard
-      // In real app, you'd check credentials first
-      router.push('/student_dashboard');
-    }, 1000);
+    }
   };
 
   return (
@@ -42,12 +76,6 @@ const LoginPage = () => {
       <div className="max-w-md mx-auto mt-16 bg-white">
         <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md">
           <h2 className="text-2xl text-black font-bold mb-6 text-center">Sign In</h2>
-          
-          {error && (
-            <div className="mb-4 text-red-600 text-center text-sm" role="alert">
-              {error}
-            </div>
-          )}
           
           <InputField
             label="Email"
